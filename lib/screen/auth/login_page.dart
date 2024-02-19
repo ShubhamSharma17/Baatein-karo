@@ -94,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Don't have a account"),
+            const Text("Don't have a account?"),
             TextButton(
               onPressed: () {
                 Navigator.push(context, CupertinoPageRoute(

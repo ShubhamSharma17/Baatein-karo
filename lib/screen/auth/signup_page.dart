@@ -1,5 +1,18 @@
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:chat_app/constant/method.dart';
+import 'package:chat_app/models/user_model.dart';
+import 'package:chat_app/provider/auth_provider.dart';
+import 'package:chat_app/screen/homepage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -14,8 +27,105 @@ class _SignUpPageState extends State<SignUpPage> {
   TextEditingController phoneController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController cPasswordController = TextEditingController();
+  late bool check;
+  UserCredential? userCredential;
+
+  File? imageFile;
+
+  String? imageUrl;
+
+  void showPhotoOption() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Choose one option"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo),
+                title: const Text("Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  selectImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera),
+                title: const Text("Camera"),
+                onTap: () {
+                  Navigator.pop(context);
+                  selectImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void selectImage(ImageSource source) async {
+    XFile? pickedImage = await ImagePicker().pickImage(source: source);
+    if (pickedImage != null) {
+      cropImage(pickedImage);
+    }
+  }
+
+  void cropImage(XFile selecetImage) async {
+    CroppedFile? croppedImage = await ImageCropper().cropImage(
+      sourcePath: selecetImage.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 30,
+    );
+
+    if (croppedImage != null) {
+      setState(() {
+        imageFile = File(croppedImage.path);
+        log(imageFile!.path.toString());
+      });
+    }
+  }
+
+  void uploadImage() async {
+    UploadTask task = FirebaseStorage.instance
+        .ref("profilepictue")
+        .child(userCredential!.user!.uid.toString())
+        .putFile(imageFile!);
+    TaskSnapshot snapshot = await task;
+
+    imageUrl = await snapshot.ref.getDownloadURL();
+    log("image uploading.....");
+    uploadData();
+  }
+
+  void uploadData() {
+    String uid = userCredential!.user!.uid;
+
+    UserModel userModel = UserModel(
+      uid: uid,
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      phoneNumber: phoneController.text.trim(),
+      profilePicture: imageUrl,
+    );
+
+    FirebaseFirestore.instance.collection("user").doc(uid).set(
+          userModel.toMap(),
+        );
+    log("User data successfully uploaded..");
+    if (!context.mounted) return;
+    Navigator.popUntil(context, (route) => route.isFirst);
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
+      return const HomePage();
+    }));
+  }
+
   @override
   Widget build(BuildContext context) {
+    AuthenticationProvider authProvider = Provider.of(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -36,30 +146,25 @@ class _SignUpPageState extends State<SignUpPage> {
                 parent: BouncingScrollPhysics()),
             child: Column(
               children: [
-                // const Text(
-                //   "Welcome to",
-                //   style: TextStyle(
-                //     fontSize: 24,
-                //     fontWeight: FontWeight.w500,
-                //   ),
-                // ),
-                // const SizedBox(height: 10),
-                // const Text(
-                //   "Chat App",
-                //   style: TextStyle(
-                //     fontSize: 34,
-                //     fontWeight: FontWeight.w500,
-                //   ),
-                // ),
                 const SizedBox(height: 30),
-                const CircleAvatar(
-                  radius: 50,
+                InkWell(
+                  onTap: () {
+                    showPhotoOption();
+                  },
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage:
+                        imageFile != null ? FileImage(imageFile!) : null,
+                    child: imageFile == null
+                        ? const Icon(Icons.person, size: 38)
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 30),
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.mail),
+                    prefixIcon: const Icon(Icons.person_outlined),
                     labelText: "Name",
                     hintText: "Enter Name",
                     border: OutlineInputBorder(
@@ -83,7 +188,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 TextField(
                   controller: phoneController,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.mail),
+                    prefixIcon: const Icon(Icons.phone_android),
                     labelText: "Phone Number",
                     hintText: "Enter Phone Number",
                     border: OutlineInputBorder(
@@ -117,7 +222,25 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 40),
                 CupertinoButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    check = ConstantMethod.valueCheckForSignUP(
+                        nameController.text.trim(),
+                        emailController.text.trim(),
+                        passwordController.text.trim(),
+                        cPasswordController.text.trim(),
+                        phoneController.text.trim(),
+                        imageFile);
+                    if (check) {
+                      log("sign up method calling.....");
+                      userCredential = await authProvider.signUp(
+                        emailController.text.trimLeft(),
+                        passwordController.text.trim(),
+                      );
+                      if (userCredential != null) {
+                        uploadImage();
+                      }
+                    }
+                  },
                   color: Colors.blue,
                   child: const Text(
                     "Sign Up",
