@@ -1,4 +1,5 @@
 import 'package:chat_app/provider/auth_provider.dart';
+import 'package:chat_app/provider/theme_provider.dart';
 import 'package:chat_app/screen/auth/signup_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     AuthenticationProvider authProvider = Provider.of(context, listen: false);
+    ThemeProvider themeProvider =
+        Provider.of<ThemeProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -27,6 +30,17 @@ class _LoginPageState extends State<LoginPage> {
             fontSize: 21,
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              themeProvider.toggleTheme();
+            },
+            padding: const EdgeInsets.all(0),
+            icon: (themeProvider.themeMode == ThemeMode.light)
+                ? const Icon(Icons.dark_mode)
+                : const Icon(Icons.light),
+          )
+        ],
       ),
       body: SafeArea(
           child: Container(
