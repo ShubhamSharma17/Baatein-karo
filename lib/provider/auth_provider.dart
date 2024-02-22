@@ -36,12 +36,16 @@ class AuthenticationProvider with ChangeNotifier {
           await FirebaseFirestore.instance.collection("user").doc(uid).get();
       UserModel userModel =
           UserModel.fromMap(snapshort.data() as Map<String, dynamic>);
+      User firebaseUser = FirebaseAuth.instance.currentUser!;
       log('user successfully login...');
       if (!context.mounted) return;
       Navigator.popUntil(context, (route) => route.isFirst);
       Navigator.pushReplacement(context, CupertinoPageRoute(
         builder: (context) {
-          return const HomePage();
+          return HomePage(
+            userModel: userModel,
+            firebaseUser: firebaseUser,
+          );
         },
       ));
     }

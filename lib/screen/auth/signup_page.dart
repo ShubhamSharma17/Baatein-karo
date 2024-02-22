@@ -102,6 +102,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   void uploadData() {
     String uid = userCredential!.user!.uid;
+    User firebaseUser = FirebaseAuth.instance.currentUser!;
 
     UserModel userModel = UserModel(
       uid: uid,
@@ -118,7 +119,10 @@ class _SignUpPageState extends State<SignUpPage> {
     if (!context.mounted) return;
     Navigator.popUntil(context, (route) => route.isFirst);
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
-      return const HomePage();
+      return HomePage(
+        userModel: userModel,
+        firebaseUser: firebaseUser,
+      );
     }));
   }
 
