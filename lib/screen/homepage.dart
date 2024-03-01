@@ -1,5 +1,7 @@
+import 'package:chat_app/helper/ui_helper.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/screen/auth/login_page.dart';
+import 'package:chat_app/screen/searchpage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -25,15 +27,16 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
               onPressed: () {
+                UiHelper.showloadingBox(context, "Signing Out.....");
                 FirebaseAuth.instance.signOut();
                 Navigator.popUntil(context, (route) => route.isFirst);
                 Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LoginPage(),
+                      builder: (context) => const LoginPage(),
                     ));
               },
-              icon: Icon(Icons.logout))
+              icon: const Icon(Icons.logout))
         ],
       ),
       body: Container(
@@ -42,9 +45,23 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text("Usermodel data ${widget.userModel.name}"),
               Text("firebase user data ${widget.firebaseUser.email}"),
+              Text("firebase user data ${widget.userModel.phoneNumber}"),
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => SearchPage(
+                        firebaseUser: widget.firebaseUser,
+                        userModel: widget.userModel,
+                      )));
+        },
+        backgroundColor: Colors.blue,
+        child: const Icon(Icons.search),
       ),
     );
   }

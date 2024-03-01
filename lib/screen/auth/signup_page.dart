@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:chat_app/constant/method.dart';
+import 'package:chat_app/helper/ui_helper.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/provider/auth_provider.dart';
 import 'package:chat_app/screen/homepage.dart';
@@ -191,6 +192,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 const SizedBox(height: 30),
                 TextField(
                   controller: phoneController,
+                  maxLength: 10,
+                  keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.phone_android),
                     labelText: "Phone Number",
@@ -233,12 +236,15 @@ class _SignUpPageState extends State<SignUpPage> {
                         passwordController.text.trim(),
                         cPasswordController.text.trim(),
                         phoneController.text.trim(),
-                        imageFile);
+                        imageFile,
+                        context);
                     if (check) {
+                      UiHelper.showloadingBox(context, "Create account...");
                       log("sign up method calling.....");
                       userCredential = await authProvider.signUp(
                         emailController.text.trimLeft(),
                         passwordController.text.trim(),
+                        context,
                       );
                       if (userCredential != null) {
                         uploadImage();
